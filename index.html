@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因數漢堡大亨 Factor Burger Tycoon</title>
+    <style>
+        :root {
+            --primary-color: #e67e22;
+            --danger-color: #c0392b;
+            --success-color: #27ae60;
+            --panel-color: #fff;
+            --text-color: #2c3e50;
+            --disabled-color: #bdc3c7;
+            --info-color: #3498db;
+            --coke-color: #e74c3c;
+            --bottom-height-l1: 80px; /* 動態調整的底部高度 */
+        }
+
+        /* 全局設定 */
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-color);
+            background-color: #fce4ec;
+            background-image: 
+                linear-gradient(45deg, #ffcdd2 25%, transparent 25%, transparent 75%, #ffcdd2 75%, #ffcdd2),
+                linear-gradient(45deg, #ffcdd2 25%, transparent 25%, transparent 75%, #ffcdd2 75%, #ffcdd2);
+            background-size: 50px 50px;
+            background-position: 0 0, 25px 25px;
+        }
+
+        /* 頂部資訊欄 */
+        #header {
+            flex: 0 0 auto;
+            width: 95%;
+            max-width: 800px;
+            background: #8d6e63;
+            background-image: linear-gradient(to bottom, #a1887f, #8d6e63);
+            color: #fff;
+            padding: 4px 15px;
+            margin-top: 5px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 100;
+            border: 2px solid #5d4037;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-label { font-size: 0.6rem; color: #d7ccc8; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        
+        #timer-val { color: #fff; }
+        #money-val { color: #81c784; }
+        #goal-val { color: #ffd54f; }
+
+        /* 遊戲主區域容器 */
+        #game-area {
+            flex: 1 1 auto;
+            display: flex;
+            width: 98%;
+            max-width: 1000px;
+            margin: 5px 0 0 0;
+            gap: 5px;
+            min-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* ========================
+           LAYOUT 1: Level 1 & 2 (Vertical)
+           ======================== */
+        #game-area.level-standard {
+            flex-direction: column;
+        }
+
+        /* ========================
+           LAYOUT 2: Level 3 (Horizontal Split)
+           ======================== */
+        #game-area.level-3-layout {
+            flex-direction: row;
+            padding: 5px;
+            gap: 15px;
+        }
+
+        /* --- 左側/上方 面板 (顯示區) --- */
+        .display-panel {
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* L1/L2: 上方佔滿剩餘空間 */
+        #game-area.level-standard .display-panel {
+            flex: 1;
+            width: 100%;
+        }
+
+        /* L3: 左側佔大半 */
+        #game-area.level-3-layout .display-panel {
+            flex: 1.2;
+            height: 100%;
+            background: rgba(255,255,255,0.4);
+            border-radius: 15px;
+            border: 2px dashed #fab1a0;
+        }
+
+        /* 客人與漢堡 */
+        .customer-area {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 5px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 2px solid #fab1a0;
+            z-index: 20;
+            border-radius: 0 0 15px 15px;
+        }
+        
+        /* L3 客人區微調 */
+        #game-area.level-3-layout .customer-area {
+            background: transparent;
+            border-bottom: none;
+        }
+
+        .customer-avatar {
+            font-size: 2rem; 
+            line-height: 1;
+            margin: 0;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+        }
+
+        .customer-bubble {
+            background: #fff;
+            color: #333;
+            padding: 2px 15px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 2px 0 #bdc3c7;
+            border: 2px solid #333;
+        }
+
+        .patience-container {
+            width: 80px;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+        }
+        .patience-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #27ae60, #f1c40f, #c0392b);
+            transform-origin: left;
+            transition: width 1s linear;
+        }
+
+        .plate-area-wrapper {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .burger-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+            z-index: 10;
+            margin-right: 10px;
+            height: 100%;
+        }
+
+        .burger-stack {
+            width: 220px;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            overflow-y: auto;
+            overflow-x: visible;
+            padding-bottom: 2px;
+            scrollbar-width: none; 
+            padding-top: 20px; 
+            max-height: 100%;
+        }
+        
+        /* L1/L2 高度計算 */
+        #game-area.level-standard .burger-stack {
+            max-height: calc(100vh - var(--bottom-height-l1) - 160px);
+        }
+        /* L3 高度計算 */
+        #game-area.level-3-layout .burger-stack {
+            max-height: 400px;
+        }
+
+        .burger-stack::-webkit-scrollbar { display: none; }
+
+        .coke-zone {
+            width: 60px;
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 10px;
+            height: 100%;
+        }
+
+        .coke-visual {
+            font-size: 3.5rem;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+            animation: popIn 0.3s;
+            display: none; 
+            transform: rotate(5deg);
+        }
+        .coke-visual.show { display: block; }
+
+        .plate-base {
+            width: 240px;
+            height: 12px;
+            background: linear-gradient(to bottom, #eeeeee, #bdbdbd);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-top: 2px;
+            border: 1px solid #9e9e9e;
+        }
+
+        /* --- 右側/下方 面板 (操作區) --- */
+        .control-panel {
+            background: #fff;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            z-index: 50;
+            padding: 5px;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+
+        /* L1/L2: 底部固定/動態高度 */
+        #game-area.level-standard .control-panel {
+            flex: 0 0 var(--bottom-height-l1);
+            width: 100%;
+            border-top: 4px solid #e67e22;
+            display: flex;
+            flex-direction: row;
+        }
+
+        /* L3: 右側面板 */
+        #game-area.level-3-layout .control-panel {
+            flex: 1;
+            height: 100%;
+            border: 4px solid #fff;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+        }
+
+        /* === 內容區塊切換 === */
+        .l1-controls { display: none; width: 100%; height: 100%; gap: 5px; }
+        .l3-controls { display: none; width: 100%; height: 100%; flex-direction: column; gap: 10px; }
+
+        /* 根據 class 顯示對應內容 */
+        #game-area.level-standard .l1-controls { display: flex; }
+        #game-area.level-3-layout .l3-controls { display: flex; }
+
+        /* L1/L2 元件：動態網格 */
+        .ingredients-grid {
+            display: grid;
+            /* 行數與列數將由 JS 完全動態接管 */
+            gap: 2px;
+            flex: 1;
+            height: 100%;
+        }
+
+        /* L3 元件：輸入區 + 鍵盤 + 出餐 */
+        .l3-input-row {
+            display: flex;
+            gap: 5px;
+            height: 50px;
+            width: 100%;
+        }
+        
+        .input-display {
+            flex: 1;
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .coke-small-btn {
+            width: 50px;
+            background: #fff;
+            border: 2px solid var(--coke-color);
+            border-radius: 8px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #c0392b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .coke-small-btn.active { background: var(--coke-color); color: white; box-shadow: 0 2px 0 #922b21; }
+
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 5px;
+            flex: 1;
+        }
+
+        .l3-submit-btn {
+            width: 100%;
+            height: 60px;
+            background: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1e8449;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .l3-submit-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        /* 通用按鈕樣式 */
+        .ing-btn {
+            background: #fff;
+            border: 1px solid #bdc3c7;
+            border-bottom: 3px solid #95a5a6;
+            border-radius: 5px;
+            /* 字體根據欄數壓縮，最小0.6rem，最大1.2rem */
+            font-size: clamp(0.6rem, 1.8vw, 1.2rem); 
+            font-weight: 700;
+            color: #2c3e50;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            user-select: none;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            min-width: 0; 
+            overflow: hidden;
+        }
+        .ing-btn:active { transform: translateY(2px); border-bottom-width: 1px; }
+        .ing-btn.selected { background: #95a5a6; color: #fff; border-color: #7f8c8d; opacity: 0.6; border-bottom-width: 1px; transform: translateY(2px); }
+        
+        .ing-btn.coke-grid-btn { color: var(--coke-color); border-color: var(--coke-color); font-size: clamp(0.8rem, 2.5vw, 1.5rem); background: #fff5f5; }
+        .ing-btn.coke-grid-btn.selected { background: var(--coke-color); color: white; opacity: 1; }
+        
+        .ing-btn.submit-grid-btn { background: var(--success-color); color: white; border-color: #1e8449; font-size: clamp(0.8rem, 2.5vw, 1.5rem); }
+        .ing-btn.submit-grid-btn:active { background: #219150; }
+
+        .key-btn { background: #34495e; color: white; font-size: 1.4rem; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 3px 0 #2c3e50; height: 100%; }
+        .key-btn:active { transform: translateY(2px); box-shadow: none; }
+        .key-del { background: var(--danger-color); box-shadow: 0 3px 0 #922b21; }
+        .key-enter { background: var(--success-color); box-shadow: 0 3px 0 #1e8449; }
+
+        /* 擬真食材樣式 */
+        .ingredient { width: 200px; height: 35px; margin-bottom: -3px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 1.2rem; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.1s; animation: dropIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20; user-select: none; position: relative; filter: drop-shadow(0 2px 1px rgba(0,0,0,0.15)); background: #95a5a6; border-radius: 5px; }
+        .ingredient:hover { transform: scale(1.05) translateX(5px); z-index: 100; filter: brightness(1.1); }
+        .ing-bread-top { background: radial-gradient(circle at 30% 20%, #f1c40f 0%, #e67e22 50%, #d35400 100%); width: 190px; height: 50px; border-radius: 50% 50% 10px 10px; margin-bottom: 0px; z-index: 50; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.1); }
+        .ing-bread-top::after { content: ''; position: absolute; top: 10px; left: 30px; width: 4px; height: 3px; background: #fff8e1; border-radius: 50%; box-shadow: 20px 5px 0 #fff8e1, 40px -2px 0 #fff8e1, 60px 8px 0 #fff8e1, 80px 0px 0 #fff8e1, 100px 5px 0 #fff8e1, 120px -3px 0 #fff8e1, 140px 6px 0 #fff8e1, 30px 15px 0 #fff8e1, 90px 18px 0 #fff8e1; opacity: 0.8; }
+        .ing-bread-bottom { background: linear-gradient(to bottom, #e67e22, #d35400); width: 190px; height: 35px; border-radius: 10px 10px 25px 25px; z-index: 1; box-shadow: inset 0 5px 10px rgba(0,0,0,0.1); }
+        .ing-meat { background: radial-gradient(circle, #795548 20%, #3e2723 100%); width: 190px; height: 35px; border-radius: 12px; border: 3px solid #3e2723; }
+        .ing-meat::before { content: ''; position: absolute; width: 100%; height: 100%; background: repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(0,0,0,0.2) 31px, rgba(0,0,0,0.2) 34px); border-radius: 12px; }
+        .ing-cheese { background: #f1c40f; width: 220px; height: 25px; border-radius: 4px; margin-bottom: -3px; color: #d35400; }
+        .ing-veg { background: linear-gradient(135deg, #2ecc71, #27ae60); width: 230px; height: 30px; border-radius: 20px 5px 20px 5px; border: 2px solid #229954; }
+        .ing-veg::before { content: ''; position: absolute; width: 80%; height: 2px; background: rgba(255,255,255,0.3); transform: rotate(-5deg); }
+        .ing-tomato { background: #e74c3c; width: 200px; height: 30px; border-radius: 20px; border: 3px solid #c0392b; }
+        .ing-tomato::before { content: ''; position: absolute; width: 160px; height: 15px; border: 2px dashed #ff7675; border-radius: 10px; opacity: 0.6; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: white; padding: 20px 30px; border-radius: 20px; text-align: center; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); position: relative; border: 5px solid #ff9f43; display: flex; flex-direction: column; }
+        .btn-primary { background: var(--primary-color); color: white; border: none; padding: 10px 30px; font-size: 1.2rem; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #d35400; margin-top: 10px; }
+        .btn-primary:active { transform: translateY(4px); box-shadow: none; }
+        .btn-secondary { background: var(--info-color); color: white; border: none; padding: 10px 30px; font-size: 1.2rem; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #2980b9; margin-top: 10px; margin-left: 10px; }
+        .btn-secondary:active { transform: translateY(4px); box-shadow: none; }
+
+        /* Review Styles */
+        .mistake-list { text-align: left; margin-top: 15px; border-top: 2px solid #eee; padding-top: 10px; }
+        .mistake-item { background: #fff; border: 2px solid #fab1a0; border-radius: 10px; padding: 10px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .mistake-title { font-weight: bold; color: #c0392b; font-size: 1.2rem; margin-bottom: 8px; text-align: center; background: #ffe0b2; border-radius: 5px; padding: 3px; }
+        .comparison-container { display: flex; justify-content: space-around; gap: 10px; margin-top: 5px; }
+        .burger-box { text-align: center; flex: 1; background: #fafafa; padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
+        .review-burger { display: flex; flex-direction: column-reverse; align-items: center; height: 160px; overflow-y: auto; margin: 5px auto; background: rgba(0,0,0,0.02); border-radius: 5px; padding-bottom: 5px; }
+        .review-layer { width: 110px; height: 22px; margin-bottom: -3px; border-radius: 4px; font-size: 0.9rem; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .review-bread-top { background: #e67e22; border-radius: 20px 20px 4px 4px; height: 30px; margin-bottom: 0; }
+        .review-bread-bottom { background: #e67e22; border-radius: 4px 4px 12px 12px; height: 25px; }
+        .review-meat { background: #6D214F; border: 1px solid #501639; }
+        .review-cheese { background: #f1c40f; color: #d35400; border: 1px solid #f39c12; }
+        .review-veg { background: #2ecc71; border: 1px solid #27ae60; }
+        .review-tomato { background: #e74c3c; border: 1px solid #c0392b; }
+        .factors-text { font-size: 0.9rem; color: #7f8c8d; margin-top: 5px; word-break: break-word; }
+
+        .rules-table { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 0.9rem; }
+        .rules-table td { border-bottom: 1px solid #eee; padding: 5px; text-align: left; }
+        .rules-table th { text-align: left; color: #e67e22; border-bottom: 2px solid #e67e22; padding: 5px; }
+
+        .instruction-slide { display: none; animation: fadeIn 0.3s; }
+        .instruction-slide.active { display: block; }
+        .demo-box { display: flex; justify-content: space-around; align-items: center; background: #fff; padding: 10px; border-radius: 10px; margin-top: 5px; border: 1px solid #ddd; }
+        .demo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+        .demo-btn { width: 35px; height: 35px; border: 1px solid #bdc3c7; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #fff; color: #2c3e50; font-size: 0.9rem; }
+        .demo-btn.active { background: #95a5a6; color: #fff; }
+        .demo-coke { background: #fff; color: #e74c3c; border: 2px solid #e74c3c; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin: 10px auto; display: block; width: fit-content; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes dropIn { from { transform: translateY(-50px) rotate(-10deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        @media (max-width: 600px) {
+            #game-area { flex-direction: column; }
+            .left-panel { min-height: 220px; }
+            #game-area.level-3-layout { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 開始畫面 -->
+    <div id="start-screen" class="modal-overlay" style="display: flex;">
+        <div class="modal" style="max-width: 500px;">
+            <div style="font-size: 3rem;">🍔</div>
+            <h1>因數漢堡大亨</h1>
+            <p>準備好接受挑戰了嗎？</p>
+            <button class="btn-primary" onclick="game.startInstruction()" style="font-size: 1.5rem; padding: 15px 40px;">進入遊戲</button>
+            <div style="font-size:0.8rem; color:#999; margin-top:20px;">最佳成績: $<span id="high-score-display">0</span></div>
+        </div>
+    </div>
+
+    <!-- 2. 分頁教學畫面 -->
+    <div id="instruction-screen" class="modal-overlay" style="display: none;">
+        <div class="modal" style="max-width: 600px; min-height: 400px; display: flex; flex-direction: column; justify-content: space-between;">
+            <h2 style="color:#d35400; margin-bottom: 5px;">🍔 漢堡大亨訓練班</h2>
+            
+            <div id="slide-1" class="instruction-slide active">
+                <h3 style="color:#e67e22; margin-top:0;">第 1 課：製作漢堡</h3>
+                <p>客人頭上的數字代表目標。</p>
+                <p>請找出該數字的<strong>「所有因數」</strong>作為食材！</p>
+                <div class="demo-box">
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <div style="font-size: 2rem;">🤠</div>
+                        <div style="background:#fff; padding:2px 10px; border-radius:15px; border:2px solid #333; font-weight:bold;">6</div>
+                    </div>
+                    <div style="font-size: 1.5rem;">👉</div>
+                    <div class="demo-grid">
+                        <div class="demo-btn active">1</div>
+                        <div class="demo-btn active">6</div>
+                        <div class="demo-btn active">2</div>
+                        <div class="demo-btn active">3</div>
+                    </div>
+                </div>
+                <p style="font-size: 0.9rem; color:#666;">(例：6 的因數是 1, 2, 3, 6)</p>
+            </div>
+
+            <div id="slide-2" class="instruction-slide">
+                <h3 style="color:#e67e22; margin-top:0;">第 2 課：特殊規則</h3>
+                <ul style="text-align:left; font-size:1rem; line-height:1.5;">
+                    <li>🥤 <strong>質數可樂</strong>：如果客人是質數，記得加送可樂！
+                        <div class="demo-coke">🥤 質數可樂</div>
+                    </li>
+                    <li>🏰 <strong>大訂單</strong>：漢堡超過 8 層，額外加 $100！</li>
+                    <li>😡 <strong>空盤懲罰</strong>：沒放食材就送出，扣 $200！</li>
+                    <li>❌ <strong>做錯</strong>：選錯或漏選扣 $30。</li>
+                </ul>
+            </div>
+
+            <div id="slide-3" class="instruction-slide">
+                <h3 style="color:#e67e22; margin-top:0;">第 3 課：目標與榮譽</h3>
+                <p>每位客人都有耐心極限，動作要快！</p>
+                <table class="rules-table">
+                    <tr><th>稱號</th><th>總資產</th></tr>
+                    <tr><td>🔰 漢堡小廚</td><td>&lt; $2000</td></tr>
+                    <tr><td>👨‍🍳 漢堡大廚</td><td>$2000 - $4000</td></tr>
+                    <tr><td>🏘️ 小區知名漢堡大師</td><td>$4000 - $6000</td></tr>
+                    <tr><td>🌏 國際漢堡大亨</td><td>$6000 - $8000</td></tr>
+                    <tr><td>🚀 宇宙漢堡王</td><td>&gt; $8000</td></tr>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <button id="prev-slide-btn" class="btn-secondary" onclick="game.prevSlide()" style="visibility: hidden;">上一步</button>
+                <button id="next-slide-btn" class="btn-primary" onclick="game.nextSlide()">下一步</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 遊戲主介面 -->
+    <header id="header">
+        <div class="stat-box">
+            <span class="stat-label">關卡</span>
+            <span class="stat-value" id="level-val">1-30</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">剩餘時間</span>
+            <span class="stat-value" id="timer-val">90</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">目標</span>
+            <span class="stat-value" id="goal-val">$500</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">總資產</span>
+            <span class="stat-value" id="money-val">$0</span>
+        </div>
+    </header>
+
+    <div id="game-area" class="level-standard">
+        <div class="display-panel left-panel">
+            <!-- 客人與耐心條 -->
+            <div class="customer-area">
+                <div class="customer-avatar" id="avatar">🤠</div>
+                <div class="customer-bubble" id="target-num">?</div>
+                <div class="patience-container">
+                    <div class="patience-bar" id="patience-bar"></div>
+                </div>
+            </div>
+            
+            <!-- 製作台區域 (漢堡+可樂) -->
+            <div class="plate-area-wrapper">
+                <div class="burger-zone">
+                     <div class="burger-stack" id="burger-stack"></div>
+                     <div class="plate-base"></div>
+                </div>
+                <div class="coke-zone">
+                     <div id="coke-visual" class="coke-visual">🥤</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下方操作區 -->
+        <div class="control-panel right-panel">
+            
+            <!-- L1/L2: 動態網格 (依數量自動切換行數) -->
+            <div class="l1-controls">
+                <div class="ingredients-grid" id="ing-grid">
+                    <!-- JS Injected Buttons -->
+                </div>
+            </div>
+
+            <!-- L3: 左右分區控制項 -->
+            <div class="l3-controls">
+                <div class="l3-input-row">
+                    <div class="input-display" id="keypad-display"></div>
+                    <button id="coke-keypad-btn" class="coke-small-btn" onclick="game.toggleCoke()">🥤</button>
+                </div>
+                <div class="numpad-grid">
+                    <button class="key-btn" onclick="game.keypadInput(7)">7</button>
+                    <button class="key-btn" onclick="game.keypadInput(8)">8</button>
+                    <button class="key-btn" onclick="game.keypadInput(9)">9</button>
+                    <button class="key-btn" onclick="game.keypadInput(4)">4</button>
+                    <button class="key-btn" onclick="game.keypadInput(5)">5</button>
+                    <button class="key-btn" onclick="game.keypadInput(6)">6</button>
+                    <button class="key-btn" onclick="game.keypadInput(1)">1</button>
+                    <button class="key-btn" onclick="game.keypadInput(2)">2</button>
+                    <button class="key-btn" onclick="game.keypadInput(3)">3</button>
+                    <button class="key-btn key-del" onclick="game.keypadDelete()">C</button>
+                    <button class="key-btn" onclick="game.keypadInput(0)">0</button>
+                    <button class="key-btn key-enter" onclick="game.keypadSubmit()">加入</button>
+                </div>
+                <button class="l3-submit-btn" onclick="game.submit()">🛎️ 出餐 (Space)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 訊息彈窗 -->
+    <div id="msg-modal" class="modal-overlay">
+        <div class="modal">
+            <div id="msg-icon" style="font-size: 3rem; margin-bottom: 5px;"></div>
+            <h2 id="msg-title">標題</h2>
+            <div class="modal-content" id="msg-body">內容</div>
+            
+            <div id="review-area" class="review-box" style="display:none;">
+                <strong id="review-title" style="color: #2c3e50; font-size: 1.1rem; display:block; margin-bottom:10px; text-align:center;">正確答案是：</strong>
+                <div id="review-factors" class="factor-pairs"></div>
+            </div>
+            
+            <div id="level-review-area" class="mistake-list" style="display:none;"></div>
+
+            <div id="modal-actions" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const game = {
+            config: {
+                level1: { min: 2, max: 30, time: 90, goal: 500, mode: 'select', patience: 30 },
+                level2: { min: 31, max: 60, time: 90, goal: 1500, mode: 'select', patience: 30 }, // 更新數值範圍：31-60
+                level3: { min: 2, max: 100, time: 210, goal: 3500, mode: 'input', patience: 60 }, 
+                reward: 150,
+                primeBonus: 50,
+                largeOrderBonus: 100, 
+                largeOrderThreshold: 8,
+                mistakePenalty: 30,
+                timeoutPenalty: 200,
+                emptyPlatePenalty: 200
+            },
+            state: {
+                level: 1,
+                pendingLevel: 1,
+                money: 0,
+                totalScore: 0, 
+                currentGoal: 0,
+                target: 0,
+                selected: [],
+                hasCoke: false,
+                timer: null,      
+                patienceTimer: null, 
+                timeLeft: 0,      
+                patienceLeft: 0, 
+                isPlaying: false,
+                maxUnlockedLevel: 1,
+                currentInput: "",
+                mistakeHistory: [],
+                keyboardInitialized: false,
+                reviewIndex: 0, 
+                reviewNextCallback: null,
+                primeStreak: 0,
+                instructionStep: 1,
+                totalServed: 0,
+                perfectServed: 0,
+                currentMistakeMade: false
+            },
+            audioCtx: null,
+
+            init: function() {
+                const highScore = localStorage.getItem('factorBurgerHighScore') || 0;
+                document.getElementById('high-score-display').innerText = highScore;
+                this.initKeyboard();
+            },
+
+            initAudio: function() {
+                if (!this.audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if(AudioContext) this.audioCtx = new AudioContext();
+                }
+                if(this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            },
+
+            playCoinSound: function() {
+                if (!this.audioCtx) this.initAudio();
+                if (!this.audioCtx) return;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, this.audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(2000, this.audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + 0.5);
+            },
+
+            playAngrySound: function() {
+                if (!this.audioCtx) this.initAudio();
+                if (!this.audioCtx) return;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, this.audioCtx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + 0.4);
+            },
+
+            initKeyboard: function() {
+                document.addEventListener('keydown', (e) => {
+                    if (!this.state.isPlaying || this.state.level !== 3) return;
+                    if (e.key >= '0' && e.key <= '9') {
+                        this.keypadInput(parseInt(e.key));
+                    } else if (e.key === 'Enter') {
+                        this.keypadSubmit();
+                    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                        this.keypadDelete();
+                    } else if (e.key === ' ') { 
+                        e.preventDefault(); 
+                        this.submit();
+                    }
+                });
+            },
+
+            startInstruction: function() {
+                this.initAudio();
+                this.state.instructionStep = 1;
+                this.showInstructionStep(1);
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('instruction-screen').style.display = 'flex';
+            },
+
+            showInstructionStep: function(step) {
+                document.querySelectorAll('.instruction-slide').forEach(el => el.classList.remove('active'));
+                document.getElementById('slide-' + step).classList.add('active');
+                const prevBtn = document.getElementById('prev-slide-btn');
+                const nextBtn = document.getElementById('next-slide-btn');
+                prevBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+                if (step === 3) {
+                    nextBtn.innerText = "開始營業！";
+                    nextBtn.style.background = "#27ae60";
+                    nextBtn.style.boxShadow = "0 4px 0 #1e8449";
+                } else {
+                    nextBtn.innerText = "下一步";
+                    nextBtn.style.background = "#e67e22";
+                    nextBtn.style.boxShadow = "0 4px 0 #d35400";
+                }
+            },
+
+            nextSlide: function() {
+                if (this.state.instructionStep < 3) {
+                    this.state.instructionStep++;
+                    this.showInstructionStep(this.state.instructionStep);
+                } else {
+                    this.confirmStart();
+                }
+            },
+
+            prevSlide: function() {
+                if (this.state.instructionStep > 1) {
+                    this.state.instructionStep--;
+                    this.showInstructionStep(this.state.instructionStep);
+                }
+            },
+
+            confirmStart: function() {
+                document.getElementById('instruction-screen').style.display = 'none';
+                this.startActualGame(1);
+            },
+
+            startActualGame: function(level) {
+                if (level === 1) {
+                    this.state.money = 0;
+                    this.state.totalServed = 0;
+                    this.state.perfectServed = 0;
+                    this.state.mistakeHistory = [];
+                }
+                this.state.level = level;
+                this.state.isPlaying = true;
+                this.state.mistakeHistory = []; 
+                this.state.primeStreak = 0; 
+                
+                let cfg;
+                let levelText = "1-30";
+                
+                if (level === 1) { cfg = this.config.level1; levelText = "1-30"; }
+                else if (level === 2) { cfg = this.config.level2; levelText = "31-60"; }
+                else { cfg = this.config.level3; levelText = "自選挑戰"; }
+                
+                this.state.currentGoal = cfg.goal;
+                this.state.timeLeft = cfg.time; 
+
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('level-val').innerText = levelText;
+                document.getElementById('goal-val').innerText = '$' + cfg.goal;
+                
+                this.updateMoneyUI();
+                this.updateTimerUI();
+                
+                if (this.state.timer) clearInterval(this.state.timer);
+                this.state.timer = setInterval(() => {
+                    this.state.timeLeft--;
+                    this.updateTimerUI();
+                    if (this.state.timeLeft <= 0) {
+                        this.handleLevelTimeUp();
+                    }
+                }, 1000);
+
+                this.nextRound();
+            },
+
+            nextRound: function() {
+                if (this.state.timeLeft <= 0) return;
+
+                document.getElementById('msg-modal').style.display = 'none';
+                document.getElementById('level-review-area').style.display = 'none';
+                document.getElementById('review-area').style.display = 'none';
+                
+                const actionsDiv = document.getElementById('modal-actions');
+                actionsDiv.innerHTML = '';
+                const btn = document.createElement('button');
+                btn.id = 'modal-action-btn';
+                btn.className = 'btn-primary';
+                btn.innerText = "下一位客人";
+                btn.onclick = () => this.nextRound();
+                actionsDiv.appendChild(btn);
+
+                this.state.selected = [];
+                this.state.currentInput = "";
+                this.state.hasCoke = false; 
+                this.state.currentMistakeMade = false; 
+                this.updateCokeUI();
+                this.updateInputDisplay();
+                document.getElementById('burger-stack').innerHTML = '';
+                
+                let cfg;
+                if (this.state.level === 1) cfg = this.config.level1;
+                else if (this.state.level === 2) cfg = this.config.level2;
+                else cfg = this.config.level3;
+                
+                let num;
+                let min = cfg.min;
+                let max = cfg.max;
+                let isPrimeNum = false;
+
+                do {
+                    num = Math.floor(Math.random() * (max - min + 1)) + min;
+                    isPrimeNum = this.utils.isPrime(num);
+                    if (this.state.primeStreak >= 2 && isPrimeNum) continue; 
+                    break;
+                } while (true);
+
+                if (isPrimeNum) this.state.primeStreak++;
+                else this.state.primeStreak = 0;
+
+                this.state.target = num;
+
+                document.getElementById('target-num').innerText = num;
+                this.utils.setAvatar(); 
+
+                // Reset coke visual
+                document.getElementById('coke-visual').classList.remove('show');
+
+                // Switch Layout based on Level
+                const gameArea = document.getElementById('game-area');
+                if (cfg.mode === 'input') {
+                    // Level 3 Layout (Left-Right)
+                    gameArea.classList.remove('level-standard');
+                    gameArea.classList.add('level-3-layout');
+                } else {
+                    // Level 1 & 2 Layout (Top-Bottom)
+                    gameArea.classList.add('level-standard');
+                    gameArea.classList.remove('level-3-layout');
+                    this.generateGrid(num);
+                }
+
+                this.startPatienceTimer(cfg.patience);
+            },
+
+            startPatienceTimer: function(duration) {
+                if (this.state.patienceTimer) clearInterval(this.state.patienceTimer);
+                this.state.patienceLeft = duration;
+                
+                const bar = document.getElementById('patience-bar');
+                bar.style.width = '100%';
+                bar.style.background = 'linear-gradient(90deg, #27ae60, #f1c40f, #c0392b)';
+                
+                this.state.patienceTimer = setInterval(() => {
+                    if(!this.state.isPlaying) return;
+                    this.state.patienceLeft -= 0.1;
+                    let pct = (this.state.patienceLeft / duration) * 100;
+                    bar.style.width = pct + '%';
+                    if(pct < 30) bar.style.background = '#c0392b';
+                    else if(pct < 60) bar.style.background = '#f1c40f';
+                    
+                    if (this.state.patienceLeft <= 0) {
+                        this.handleCustomerTimeout();
+                    }
+                }, 100);
+            },
+
+            handleCustomerTimeout: function() {
+                clearInterval(this.state.patienceTimer);
+                this.playAngrySound();
+                this.state.money -= this.config.timeoutPenalty;
+                this.updateMoneyUI();
+                this.state.currentMistakeMade = true;
+                this.state.totalServed++;
+                
+                const correctFactors = this.utils.getFactors(this.state.target);
+                this.state.mistakeHistory.push({
+                    target: this.state.target,
+                    user: [], 
+                    correct: correctFactors
+                });
+
+                document.body.classList.add('shake');
+                setTimeout(()=>document.body.classList.remove('shake'), 500);
+
+                // Show correct answers for timeout case too
+                this.showMistakeComparison(correctFactors);
+
+                this.showModal("😡", "客人等太久了！", `客人氣沖沖地走了！<br>賠償損失 <span style='color:#ff6b6b; font-weight:bold;'>-$${this.config.timeoutPenalty}</span>`);
+            },
+
+            toggleCoke: function() {
+                if (!this.state.isPlaying) return;
+                this.state.hasCoke = !this.state.hasCoke;
+                this.updateCokeUI();
+            },
+
+            updateCokeUI: function() {
+                const btn = document.querySelector('.ing-btn.coke-grid-btn');
+                const btnSmall = document.getElementById('coke-keypad-btn');
+                const visual = document.getElementById('coke-visual');
+                if (this.state.hasCoke) {
+                    if(btn) btn.classList.add('selected');
+                    if(btnSmall) btnSmall.classList.add('active');
+                    visual.classList.add('show');
+                } else {
+                    if(btn) btn.classList.remove('selected');
+                    if(btnSmall) btnSmall.classList.remove('active');
+                    visual.classList.remove('show');
+                }
+            },
+
+            keypadInput: function(num) {
+                if (!this.state.isPlaying) return;
+                if (this.state.currentInput.length < 3) {
+                    this.state.currentInput = this.state.currentInput + num.toString();
+                    this.updateInputDisplay();
+                }
+            },
+            keypadDelete: function() {
+                if (!this.state.isPlaying) return;
+                this.state.currentInput = "";
+                this.updateInputDisplay();
+            },
+            keypadSubmit: function() {
+                if (!this.state.isPlaying) return;
+                if (this.state.currentInput === "") return;
+                let val = parseInt(this.state.currentInput);
+                if (val > 0) {
+                    const idx = this.state.selected.indexOf(val);
+                    if (idx === -1) {
+                         this.state.selected.push(val);
+                         this.addBurgerLayer(val);
+                    } else {
+                         this.state.selected.splice(idx, 1);
+                         const layer = document.getElementById(`layer-${val}`);
+                         if (layer) layer.remove();
+                    }
+                }
+                this.state.currentInput = "";
+                this.updateInputDisplay();
+            },
+            updateInputDisplay: function() {
+                document.getElementById('keypad-display').innerText = this.state.currentInput;
+            },
+
+            // --- 動態多行食材網格生成邏輯 (已按要求綁定關卡指定行數) ---
+            generateGrid: function(target) {
+                const grid = document.getElementById('ing-grid');
+                grid.innerHTML = '';
+                
+                // 無論數字多大，永遠產生 1 到 target 的所有數字
+                let buttons = [];
+                for (let i = 1; i <= target; i++) {
+                    buttons.push(i);
+                }
+
+                // 總按鈕數量 = 數字 + 1(可樂) + 1(出餐)
+                let totalButtons = buttons.length + 2; 
+
+                // 第一關：數字<=30，強制一行
+                // 第二關：數字31~60，強制兩行
+                let rows = 1;
+                if (target <= 30) {
+                    rows = 1;
+                } else if (target >= 31 && target <= 60) {
+                    rows = 2;
+                } else {
+                    rows = 3; // 備用防護
+                }
+                
+                // 計算每一行需要的列數 (向上取整)
+                let cols = Math.ceil(totalButtons / rows);
+
+                // 設定網格佈局
+                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+                grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+                // 動態調整面板高度：1行高度80px，2行高度120px，依此類推
+                let baseHeight = 60; 
+                let panelHeight = (rows === 1) ? 80 : (rows * baseHeight);
+                document.documentElement.style.setProperty('--bottom-height-l1', panelHeight + 'px');
+
+                // 產生數字按鈕
+                buttons.forEach(num => {
+                    let btn = document.createElement('div');
+                    btn.className = 'ing-btn';
+                    btn.innerText = num;
+                    btn.id = `btn-${num}`;
+                    btn.onclick = () => this.toggleIngredient(num);
+                    grid.appendChild(btn);
+                });
+                
+                // 產生可樂按鈕
+                let cokeBtn = document.createElement('div');
+                cokeBtn.className = 'ing-btn coke-grid-btn'; 
+                cokeBtn.innerText = '🥤';
+                cokeBtn.onclick = () => this.toggleCoke();
+                grid.appendChild(cokeBtn);
+
+                // 產生出餐按鈕
+                let submitBtn = document.createElement('div');
+                submitBtn.className = 'ing-btn submit-grid-btn'; 
+                submitBtn.innerText = '🛎️';
+                submitBtn.onclick = () => this.submit();
+                grid.appendChild(submitBtn);
+            },
+
+            toggleIngredient: function(num) {
+                if (!this.state.isPlaying) return;
+                
+                const idx = this.state.selected.indexOf(num);
+                if (idx === -1) {
+                    this.state.selected.push(num);
+                    const btn = document.getElementById(`btn-${num}`);
+                    if (btn) btn.classList.add('selected');
+                    this.addBurgerLayer(num);
+                } else {
+                    this.state.selected.splice(idx, 1);
+                    const btn = document.getElementById(`btn-${num}`);
+                    if (btn) btn.classList.remove('selected');
+                    const layer = document.getElementById(`layer-${num}`);
+                    if (layer) layer.remove();
+                }
+            },
+
+            getIngredientClass: function(num, target) {
+                if (num === 1) return 'ing-bread-bottom';
+                if (num === target) return 'ing-bread-top';
+                let factors = this.utils.getFactors(target).sort((a,b)=>a-b);
+                factors.shift(); 
+                factors.pop();
+                let idx = factors.indexOf(num);
+                if(idx === -1) return ['ing-meat', 'ing-cheese', 'ing-veg', 'ing-tomato'][Math.floor(Math.random()*4)];
+                
+                const styles = ['ing-meat', 'ing-cheese', 'ing-veg', 'ing-tomato'];
+                let pairIdx = -1;
+                let left = 0; 
+                let right = factors.length - 1;
+                let currentPair = 0;
+                while(left <= right) {
+                    if (idx === left || idx === right) {
+                        pairIdx = currentPair;
+                        break;
+                    }
+                    left++;
+                    right--;
+                    currentPair++;
+                }
+                return styles[pairIdx % styles.length];
+            },
+
+            addBurgerLayer: function(num) {
+                const stack = document.getElementById('burger-stack');
+                const layer = document.createElement('div');
+                layer.innerText = num;
+                layer.id = `layer-${num}`;
+                let className = this.getIngredientClass(num, this.state.target);
+                layer.className = `ingredient ${className}`;
+                layer.onclick = () => this.toggleIngredient(num);
+
+                if (num === 1) {
+                    stack.prepend(layer);
+                } else if (num === this.state.target) {
+                    stack.append(layer);
+                } else {
+                    const topBun = stack.querySelector('.ing-bread-top');
+                    if (topBun) {
+                        stack.insertBefore(layer, topBun);
+                    } else {
+                        stack.append(layer);
+                    }
+                }
+                stack.scrollTop = stack.scrollHeight;
+            },
+
+            submit: function() {
+                if (!this.state.isPlaying) return;
+                clearInterval(this.state.patienceTimer);
+
+                if (this.state.selected.length === 0) {
+                    this.handleEmptyOrder();
+                    return;
+                }
+
+                const correctFactors = this.utils.getFactors(this.state.target);
+                const userFactors = this.state.selected.sort((a,b) => a-b);
+                const isCorrect = JSON.stringify(correctFactors) === JSON.stringify(userFactors);
+                const isPrime = correctFactors.length === 2;
+
+                if (isPrime && !this.state.hasCoke && isCorrect) {
+                    this.handleSuccess(correctFactors, false); 
+                    return; 
+                }
+
+                if (!isPrime && this.state.hasCoke) {
+                    this.handleMistake(correctFactors, "非質數不需要可樂！");
+                    return;
+                }
+
+                if (isCorrect) {
+                    this.handleSuccess(correctFactors, true);
+                } else {
+                    this.handleMistake(correctFactors);
+                }
+            },
+
+            handleEmptyOrder: function() {
+                this.playAngrySound();
+                this.state.money -= this.config.emptyPlatePenalty;
+                this.updateMoneyUI();
+                this.state.currentMistakeMade = true;
+                this.state.totalServed++;
+                
+                const correctFactors = this.utils.getFactors(this.state.target);
+                this.state.mistakeHistory.push({
+                    target: this.state.target,
+                    user: [], 
+                    correct: correctFactors
+                });
+
+                document.body.classList.add('shake');
+                setTimeout(()=>document.body.classList.remove('shake'), 500);
+                
+                this.showMistakeComparison(correctFactors);
+
+                this.showModal(
+                    "🍽️", 
+                    "空盤子？！", 
+                    "客人很生氣！<br>你什麼都沒給！<br>懲罰 <span style='color:#ff6b6b; font-weight:bold;'>-$200</span>"
+                );
+            },
+
+            handleSuccess: function(correctFactors, hasBonusCoke) {
+                this.playCoinSound();
+                this.state.totalServed++;
+                if (!this.state.currentMistakeMade) {
+                    this.state.perfectServed++;
+                }
+
+                let gain = this.config.reward;
+                let title = "😋 好吃！";
+                let icon = "🍔";
+                let msg = `漢堡製作完美！<br>獲得 <span style='color:#1dd1a1; font-weight:bold;'>+$${gain}</span>`;
+
+                if (correctFactors.length === 2) {
+                    if (hasBonusCoke) {
+                        gain += this.config.primeBonus;
+                        title = "🌟 質數驚喜！";
+                        icon = "💎";
+                        msg = `這是一個質數！客人非常滿意質數可樂！<br>小費 +$50<br>總計獲得 <span style='color:#1dd1a1; font-weight:bold;'>+$${gain}</span>`;
+                    } else {
+                        title = "🙂 漢堡正確";
+                        msg = `漢堡是對的，但你忘了給質數可樂...<br>少了小費。<br>獲得 <span style='color:#1dd1a1; font-weight:bold;'>+$${gain}</span>`;
+                    }
+                }
+                
+                if (correctFactors.length >= this.config.largeOrderThreshold) {
+                    gain += this.config.largeOrderBonus;
+                    title = "🏗️ 超大漢堡！";
+                    icon = "🏰";
+                    msg = `這漢堡太壯觀了！(8層以上)<br>客人給了超級小費 +$100<br>總計獲得 <span style='color:#1dd1a1; font-weight:bold;'>+$${gain}</span>`;
+                }
+
+                this.state.money += gain;
+                this.updateMoneyUI();
+                this.showModal(icon, title, msg);
+            },
+
+            handleLevelTimeUp: function() {
+                clearInterval(this.state.timer);
+                clearInterval(this.state.patienceTimer);
+                this.state.isPlaying = false;
+                
+                const actionsDiv = document.getElementById('modal-actions');
+                actionsDiv.innerHTML = '';
+
+                // Save score
+                const currentBest = localStorage.getItem('factorBurgerHighScore') || 0;
+                if (this.state.money > currentBest) {
+                    localStorage.setItem('factorBurgerHighScore', this.state.money);
+                }
+
+                if (this.state.money >= this.state.currentGoal) {
+                    this.handleLevelComplete();
+                } else {
+                    let title = "🎮 遊戲結束";
+                    let msg = `
+                        <div style="text-align:left;">
+                            本關卡營業額：$${this.state.money} <br> 目標：$${this.state.currentGoal} <br> <span style='color:red'>很遺憾，資金不足破產了...</span>
+                            <hr style="margin:10px 0; border:1px dashed #ccc;">
+                            <p>📦 累計完成訂單：${this.state.totalServed}</p>
+                            <p>✨ 累計完美訂單：${this.state.perfectServed}</p>
+                        </div>
+                    `;
+                    let icon = "💸";
+                    this.showModal(icon, title, msg);
+                    
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-primary';
+                    btn.id = 'modal-action-btn'; 
+                    btn.innerText = "重新開始遊戲"; 
+                    btn.onclick = () => this.backToMenu();
+                    actionsDiv.appendChild(btn);
+                    
+                    if (this.state.mistakeHistory.length > 0) {
+                        const reviewBtn = document.createElement('button');
+                        reviewBtn.className = 'btn-secondary';
+                        reviewBtn.innerText = "📝 重溫錯題";
+                        reviewBtn.onclick = () => this.showLevelReview("重新開始遊戲", null); 
+                        actionsDiv.appendChild(reviewBtn);
+                    }
+                }
+            },
+
+            handleLevelComplete: function() {
+                this.playCoinSound();
+                clearInterval(this.state.timer);
+                
+                const actionsDiv = document.getElementById('modal-actions');
+                actionsDiv.innerHTML = '';
+
+                let nextLevel = this.state.level + 1;
+                let title = "";
+                let msg = "";
+                let btnText = "前往下一關";
+
+                let currentRank = this.getReputation(this.state.money);
+
+                const statsHtml = `
+                    <div style="background:#f1f2f6; padding:15px; border-radius:10px; margin:10px 0; text-align:left;">
+                        <p style="margin:5px 0;">💰 營業額：<strong>$${this.state.money}</strong> (目標 $${this.state.currentGoal})</p>
+                        <p style="margin:5px 0;">📦 累計完成訂單：${this.state.totalServed}</p>
+                        <p style="margin:5px 0;">✨ 累計完美訂單：${this.state.perfectServed}</p>
+                    </div>
+                `;
+
+                if (this.state.level === 1) {
+                    title = "👨‍🍳 第一關完成！";
+                    msg = `${statsHtml}
+                        <p>目前稱號：<strong>${currentRank}</strong></p>
+                        <p>恭喜晉級！準備迎接更多挑戰！</p>
+                    `;
+                } else if (this.state.level === 2) {
+                    title = "🔥 第二關完成！";
+                    msg = `${statsHtml}
+                        <p>目前稱號：<strong>${currentRank}</strong></p>
+                        <p>下一關要<strong>自己填寫</strong>食譜，加油！</p>
+                    `;
+                } else {
+                    this.showFinalScoreBoard(true);
+                    return; 
+                }
+
+                if (this.state.level === this.state.maxUnlockedLevel && this.state.level < 3) {
+                    this.state.maxUnlockedLevel++;
+                }
+
+                this.showModal("🎉", title, msg);
+                const btn = document.createElement('button');
+                btn.className = 'btn-primary';
+                btn.id = 'modal-action-btn';
+
+                if (this.state.mistakeHistory.length > 0) {
+                    btn.innerText = "📝 必需先重溫錯題";
+                    btn.onclick = () => this.showLevelReview(btnText, nextLevel);
+                } else {
+                    btn.innerText = btnText;
+                    btn.onclick = () => this.startActualGame(nextLevel);
+                }
+                actionsDiv.appendChild(btn);
+            },
+
+            getReputation: function(score) {
+                if (score >= 8000) return "🚀 宇宙漢堡王";
+                if (score >= 6000) return "🌏 國際漢堡大亨";
+                if (score >= 4000) return "🏘️ 小區知名漢堡大師";
+                if (score >= 2000) return "👨‍🍳 漢堡大廚";
+                return "🔰 漢堡小廚";
+            },
+
+            showFinalScoreBoard: function(isWin) {
+                const currentBest = localStorage.getItem('factorBurgerHighScore') || 0;
+                if (this.state.money > currentBest) {
+                    localStorage.setItem('factorBurgerHighScore', this.state.money);
+                }
+
+                const actionsDiv = document.getElementById('modal-actions');
+                actionsDiv.innerHTML = '';
+
+                let rank = this.getReputation(this.state.money);
+                let title = "🏆 遊戲結束！";
+                let icon = "👑";
+                let msg = `
+                    <div style="text-align:center;">
+                        <h2 style="color:#e67e22; margin:0;">${rank}</h2>
+                        <p style="color:#7f8c8d; margin-top:5px;">你的最終榮譽稱號</p>
+                    </div>
+                    <div style="background:#f1f2f6; padding:15px; border-radius:10px; margin:15px 0;">
+                        <p style="font-size:1.1rem; margin:5px 0;">💰 累計總資產：<strong>$${this.state.money}</strong></p>
+                        <hr style="border:1px dashed #ccc; margin:10px 0;">
+                        <p style="font-size:1rem; margin:5px 0;">📦 完成訂單：${this.state.totalServed}</p>
+                        <p style="font-size:1rem; margin:5px 0;">✨ 完美訂單：${this.state.perfectServed}</p>
+                    </div>
+                    <p>感謝你的遊玩！</p>
+                `;
+                this.showModal(icon, title, msg);
+                const btn = document.createElement('button');
+                btn.className = 'btn-primary';
+                btn.id = 'modal-action-btn';
+                
+                if (this.state.mistakeHistory.length > 0) {
+                    btn.innerText = "📝 必需先重溫本關錯題";
+                    btn.onclick = () => this.showLevelReview("回到主選單", null);
+                } else {
+                    btn.innerText = "回到主選單";
+                    btn.onclick = () => this.backToMenu();
+                }
+                actionsDiv.appendChild(btn);
+            },
+
+            showMistakeComparison: function(correctFactors) {
+                document.getElementById('review-area').style.display = 'block';
+                const reviewDiv = document.getElementById('review-factors');
+                reviewDiv.innerHTML = '';
+                
+                const createMiniBurgerHTML = (factors, target) => {
+                    let sorted = [...factors].sort((a,b)=>a-b);
+                    let html = '';
+                    
+                    sorted.forEach(num => {
+                        let styleClass = game.getIngredientClass(num, target); 
+                        let reviewClass = styleClass.replace('ing-', 'review-');
+                        html += `<div class="review-layer ${reviewClass}" style="width:100px; height:20px; font-size:0.8rem;">${num}</div>`;
+                    });
+                    return `<div class="review-burger" style="height:120px;">${html}</div>`;
+                };
+                
+                reviewDiv.innerHTML = `
+                    <div style="display:flex; justify-content:center; gap:10px;">
+                        <div class="burger-box" style="border-color:#27ae60; background:#f0fdf4;">
+                            <h4 style="color:#27ae60">正確食譜</h4>
+                            ${createMiniBurgerHTML(correctFactors, this.state.target)}
+                            <div class="factors-text">${correctFactors.sort((a,b)=>a-b).join(", ")}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            showLevelReview: function(nextBtnText, nextLevel) {
+                this.state.reviewIndex = 0;
+                this.state.reviewNextCallback = () => {
+                    if (nextBtnText === "回到主選單" || nextBtnText === "重新開始" || nextBtnText === "重新開始遊戲") {
+                         this.backToMenu();
+                    } else if (nextBtnText === "重試本關") {
+                         this.backToMenu(); 
+                    } else {
+                        this.startActualGame(nextLevel);
+                    }
+                };
+                this.renderReviewPage();
+            },
+
+            renderReviewPage: function() {
+                const mistake = this.state.mistakeHistory[this.state.reviewIndex];
+                const total = this.state.mistakeHistory.length;
+                
+                document.getElementById('msg-body').style.display = 'none';
+                document.getElementById('msg-title').innerText = `錯題回顧 (${this.state.reviewIndex + 1}/${total})`;
+                document.getElementById('msg-icon').innerText = "📖";
+                
+                document.getElementById('review-area').style.display = 'none';
+                
+                const listContainer = document.getElementById('level-review-area');
+                listContainer.innerHTML = '';
+                listContainer.style.display = 'block';
+
+                const item = document.createElement('div');
+                item.className = 'mistake-item';
+                
+                const createReviewBurgerHTML = (factors, target) => {
+                    let sorted = [...factors].sort((a,b)=>a-b);
+                    let html = '';
+                    let text = sorted.join(", ");
+                    
+                    sorted.forEach(num => {
+                        let styleClass = game.getIngredientClass(num, target);
+                        let reviewClass = styleClass.replace('ing-', 'review-');
+                        html += `<div class="review-layer ${reviewClass}">${num}</div>`;
+                    });
+                    return `<div class="review-burger">${html}</div><div class="factors-text">${text || "(空)"}</div>`;
+                };
+
+                item.innerHTML = `
+                    <div class="mistake-title">客人數字：${mistake.target}</div>
+                    <div class="comparison-container">
+                        <div class="burger-box">
+                            <h4>你的漢堡</h4>
+                            ${createReviewBurgerHTML(mistake.user, mistake.target)}
+                        </div>
+                        <div class="burger-box" style="border-color:#27ae60; background:#f0fdf4;">
+                            <h4 style="color:#27ae60">完美食譜</h4>
+                            ${createReviewBurgerHTML(mistake.correct, mistake.target)}
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+
+                const actionsDiv = document.getElementById('modal-actions');
+                actionsDiv.innerHTML = '';
+                
+                const actionBtn = document.createElement('button');
+                actionBtn.className = 'btn-primary';
+                
+                if (this.state.reviewIndex < total - 1) {
+                    actionBtn.innerText = "下一題 ➡";
+                    actionBtn.onclick = () => {
+                        this.state.reviewIndex++;
+                        this.renderReviewPage();
+                    };
+                } else {
+                    actionBtn.innerText = "完成重溫 ✅";
+                    actionBtn.onclick = () => {
+                        if (this.state.reviewNextCallback) this.state.reviewNextCallback();
+                    };
+                }
+                actionsDiv.appendChild(actionBtn);
+            },
+
+            backToMenu: function() {
+                document.getElementById('msg-modal').style.display = 'none';
+                document.getElementById('start-screen').style.display = 'flex';
+                document.getElementById('game-area').style.display = 'flex'; 
+                this.state.money = 0;
+                this.state.totalServed = 0;
+                this.state.perfectServed = 0;
+                this.state.mistakeHistory = [];
+                const highScore = localStorage.getItem('factorBurgerHighScore') || 0;
+                document.getElementById('high-score-display').innerText = highScore;
+            },
+
+            handleMistake: function(correctFactors, extraMsg) {
+                this.playAngrySound();
+                this.state.money -= this.config.mistakePenalty;
+                this.updateMoneyUI();
+                this.state.currentMistakeMade = true;
+                
+                this.state.totalServed++; // Count attempt
+
+                this.state.mistakeHistory.push({
+                    target: this.state.target,
+                    user: [...this.state.selected], 
+                    correct: correctFactors
+                });
+
+                let msg = `扣除材料費 <span style='color:#ff6b6b; font-weight:bold;'>-$${this.config.mistakePenalty}</span>`;
+                if(extraMsg) msg = extraMsg + "<br>" + msg;
+
+                // 1. Show immediate comparison in modal
+                this.showMistakeComparison(correctFactors);
+
+                // 2. Show Modal
+                this.showModal("😰", "味道不對喔...", msg);
+            },
+
+            updateMoneyUI: function() {
+                const el = document.getElementById('money-val');
+                el.innerText = '$' + this.state.money;
+                el.style.color = this.state.money >= this.state.currentGoal ? '#27ae60' : (this.state.money >= 0 ? '#2c3e50' : '#c0392b');
+            },
+
+            updateTimerUI: function() {
+                const el = document.getElementById('timer-val');
+                el.innerText = this.state.timeLeft;
+                if(this.state.timeLeft <= 10) el.style.color = '#c0392b'; 
+                else el.style.color = '#fff';
+            },
+
+            showModal: function(icon, title, body) {
+                document.getElementById('msg-body').style.display = 'block';
+                document.getElementById('level-review-area').style.display = 'none';
+                
+                // review-area is controlled by specific error functions, hide by default if new modal
+                if(!body.includes('扣除材料費') && !body.includes('空盤子')) {
+                     document.getElementById('review-area').style.display = 'none';
+                }
+                
+                document.getElementById('msg-icon').innerText = icon;
+                document.getElementById('msg-title').innerText = title;
+                if(body) document.getElementById('msg-body').innerHTML = body;
+                
+                document.getElementById('msg-modal').style.display = 'flex';
+                
+                // Clear old actions
+                const actionsDiv = document.getElementById('modal-actions');
+                actionsDiv.innerHTML = '';
+                const btn = document.createElement('button');
+                btn.id = 'modal-action-btn';
+                btn.className = 'btn-primary';
+                btn.innerText = '下一位客人';
+                btn.onclick = () => this.nextRound();
+                actionsDiv.appendChild(btn);
+            },
+
+            utils: {
+                getFactors: function(num) {
+                    let factors = [];
+                    for(let i=1; i<=num; i++) {
+                        if(num % i === 0) factors.push(i);
+                    }
+                    return factors;
+                },
+                isPrime: function(num) {
+                    if (num <= 1) return false;
+                    for (let i = 2; i <= Math.sqrt(num); i++) {
+                        if (num % i === 0) return false;
+                    }
+                    return true;
+                },
+                setAvatar: function() {
+                    const avatars = ["🤠", "👩‍💼", "👨‍🎤", "👵", "👲", "👳‍♂️", "🧛‍♀️", "👽"];
+                    document.getElementById('avatar').innerText = avatars[Math.floor(Math.random()*avatars.length)];
+                }
+            }
+        };
+
+        window.onload = function() {
+            game.init();
+        }
+    </script>
+</body>
+</html>

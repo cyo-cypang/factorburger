@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>因數漢堡大亨 Factor Burger Tycoon</title>
     <style>
         :root {
@@ -14,11 +14,11 @@
             --disabled-color: #bdc3c7;
             --info-color: #3498db;
             --coke-color: #e74c3c;
-            --bottom-height-l1: 80px; /* 動態調整的底部高度 */
+            --bottom-height-l1: 85px; /* 動態調整的底部高度 */
         }
 
-        /* 全局設定 */
-        * { box-sizing: border-box; }
+        /* 全局設定：完全鎖死畫面，禁止任何瀏覽器預設的滑動與回彈 */
+        * { box-sizing: border-box; touch-action: none; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -27,7 +27,9 @@
             flex-direction: column;
             align-items: center;
             height: 100vh;
-            overflow: hidden;
+            width: 100vw;
+            overflow: hidden; /* 絕對禁止滑動 */
+            overscroll-behavior: none; /* 防止下拉更新回彈 */
             color: var(--text-color);
             background-color: #fce4ec;
             background-image: 
@@ -40,12 +42,12 @@
         /* 頂部資訊欄 */
         #header {
             flex: 0 0 auto;
-            width: 95%;
+            width: 98%;
             max-width: 800px;
             background: #8d6e63;
             background-image: linear-gradient(to bottom, #a1887f, #8d6e63);
             color: #fff;
-            padding: 4px 15px;
+            padding: 4px 10px;
             margin-top: 5px;
             border-radius: 10px;
             display: flex;
@@ -58,13 +60,9 @@
             border: 2px solid #5d4037;
         }
 
-        .stat-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .stat-label { font-size: 0.6rem; color: #d7ccc8; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 1rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        .stat-box { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 0.65rem; color: #d7ccc8; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1.1rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
         
         #timer-val { color: #fff; }
         #money-val { color: #81c784; }
@@ -74,30 +72,25 @@
         #game-area {
             flex: 1 1 auto;
             display: flex;
-            width: 98%;
+            width: 100%;
             max-width: 1000px;
             margin: 5px 0 0 0;
             gap: 5px;
             min-height: 0;
             overflow: hidden;
-            transition: all 0.3s ease;
+            padding: 0 5px;
         }
 
         /* ========================
            LAYOUT 1: Level 1 & 2 (Vertical)
            ======================== */
-        #game-area.level-standard {
-            flex-direction: column;
-        }
+        #game-area.level-standard { flex-direction: column; }
 
         /* ========================
            LAYOUT 2: Level 3 (Horizontal Split)
            ======================== */
-        #game-area.level-3-layout {
-            flex-direction: row;
-            padding: 5px;
-            gap: 15px;
-        }
+        #game-area.level-3-layout { flex-direction: row; padding: 5px; gap: 10px; }
+        @media (max-width: 600px) { #game-area.level-3-layout { flex-direction: column; } }
 
         /* --- 左側/上方 面板 (顯示區) --- */
         .display-panel {
@@ -109,13 +102,12 @@
             overflow: hidden;
         }
 
-        /* L1/L2: 上方佔滿剩餘空間 */
         #game-area.level-standard .display-panel {
-            flex: 1;
+            flex: 1 1 auto;
             width: 100%;
+            min-height: 150px; /* 確保漢堡區絕對可見 */
         }
 
-        /* L3: 左側佔大半 */
         #game-area.level-3-layout .display-panel {
             flex: 1.2;
             height: 100%;
@@ -124,7 +116,7 @@
             border: 2px dashed #fab1a0;
         }
 
-        /* 客人與漢堡 */
+        /* 客人區 */
         .customer-area {
             flex: 0 0 auto;
             display: flex;
@@ -138,16 +130,17 @@
             border-bottom: 2px solid #fab1a0;
             z-index: 20;
             border-radius: 0 0 15px 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
         
-        /* L3 客人區微調 */
         #game-area.level-3-layout .customer-area {
             background: transparent;
             border-bottom: none;
+            box-shadow: none;
         }
 
         .customer-avatar {
-            font-size: 2rem; 
+            font-size: 2.2rem; 
             line-height: 1;
             margin: 0;
             filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
@@ -158,7 +151,7 @@
             color: #333;
             padding: 2px 15px;
             border-radius: 15px;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: 900;
             position: relative;
             display: inline-block;
@@ -168,9 +161,9 @@
 
         .patience-container {
             width: 80px;
-            height: 6px;
+            height: 8px;
             background: #eee;
-            border-radius: 3px;
+            border-radius: 4px;
             overflow: hidden;
             border: 1px solid #ccc;
         }
@@ -182,15 +175,16 @@
             transition: width 1s linear;
         }
 
+        /* 漢堡與可樂疊放區 */
         .plate-area-wrapper {
-            flex: 1;
+            flex: 1 1 auto;
             width: 100%;
             display: flex;
             align-items: flex-end;
             justify-content: center;
-            overflow: hidden;
+            overflow: hidden; /* 禁止溢出 */
             position: relative;
-            padding-bottom: 10px;
+            padding-bottom: 15px;
         }
 
         .burger-zone {
@@ -202,31 +196,21 @@
             z-index: 10;
             margin-right: 10px;
             height: 100%;
+            overflow: hidden;
         }
 
+        /* 漢堡疊放容器：移除捲動，超出部分隱藏 */
         .burger-stack {
             width: 220px;
             display: flex;
             flex-direction: column-reverse;
             align-items: center;
-            overflow-y: auto;
-            overflow-x: visible;
+            overflow: hidden; /* 絕對不捲動 */
             padding-bottom: 2px;
-            scrollbar-width: none; 
-            padding-top: 20px; 
-            max-height: 100%;
+            padding-top: 5px; 
+            height: 100%;
+            justify-content: flex-start;
         }
-        
-        /* L1/L2 高度計算 */
-        #game-area.level-standard .burger-stack {
-            max-height: calc(100vh - var(--bottom-height-l1) - 160px);
-        }
-        /* L3 高度計算 */
-        #game-area.level-3-layout .burger-stack {
-            max-height: 400px;
-        }
-
-        .burger-stack::-webkit-scrollbar { display: none; }
 
         .coke-zone {
             width: 60px;
@@ -246,6 +230,7 @@
         .coke-visual.show { display: block; }
 
         .plate-base {
+            flex: 0 0 auto;
             width: 240px;
             height: 12px;
             background: linear-gradient(to bottom, #eeeeee, #bdbdbd);
@@ -258,23 +243,22 @@
         /* --- 右側/下方 面板 (操作區) --- */
         .control-panel {
             background: #fff;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 50;
             padding: 5px;
             overflow: hidden;
-            transition: height 0.3s ease;
+            border-radius: 10px 10px 0 0;
+            flex-shrink: 0;
         }
 
-        /* L1/L2: 底部固定/動態高度 */
+        /* L1/L2: 固定在底部，高度由 JS 變數控制 */
         #game-area.level-standard .control-panel {
-            flex: 0 0 var(--bottom-height-l1);
+            height: var(--bottom-height-l1);
             width: 100%;
             border-top: 4px solid #e67e22;
-            display: flex;
-            flex-direction: row;
         }
 
-        /* L3: 右側面板 */
+        /* L3: 作為側邊欄或底部面板 */
         #game-area.level-3-layout .control-panel {
             flex: 1;
             height: 100%;
@@ -283,33 +267,53 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            padding: 15px;
+            padding: 10px;
         }
 
-        /* === 內容區塊切換 === */
-        .l1-controls { display: none; width: 100%; height: 100%; gap: 5px; }
-        .l3-controls { display: none; width: 100%; height: 100%; flex-direction: column; gap: 10px; }
-
-        /* 根據 class 顯示對應內容 */
+        /* === 內容區塊結構 === */
+        /* L1/L2 結構：左側強制網格 + 右側固定出餐區 */
+        .l1-controls { 
+            display: none; 
+            width: 100%; 
+            height: 100%; 
+            flex-direction: row;
+            align-items: stretch;
+            gap: 5px; 
+            overflow: hidden;
+        }
+        
         #game-area.level-standard .l1-controls { display: flex; }
         #game-area.level-3-layout .l3-controls { display: flex; }
 
-        /* L1/L2 元件：動態網格 */
-        .ingredients-grid {
-            display: grid;
-            /* 行數與列數將由 JS 完全動態接管 */
-            gap: 2px;
-            flex: 1;
+        /* 左側數字區容器：禁止滑動 */
+        .ingredients-container {
+            flex: 1 1 auto;
+            overflow: hidden; /* 絕對禁止滑動 */
+            padding-right: 5px;
+            border-right: 2px dashed #bdc3c7;
             height: 100%;
         }
 
-        /* L3 元件：輸入區 + 鍵盤 + 出餐 */
-        .l3-input-row {
-            display: flex;
-            gap: 5px;
-            height: 50px;
+        /* 動態網格：強制壓縮內容以適應寬度 */
+        .ingredients-grid {
+            display: grid;
+            gap: 2px; /* 縮小間距節省空間 */
+            height: 100%;
             width: 100%;
         }
+
+        /* 右側動作區：永遠固定在畫面上 */
+        .l1-action-area {
+            display: flex;
+            flex: 0 0 auto;
+            gap: 5px;
+            /* 寬度與排列方向將由 JS 根據行數動態設定 */
+        }
+
+        /* L3 專用控制項 */
+        .l3-controls { display: none; width: 100%; height: 100%; flex-direction: column; gap: 8px; }
+        
+        .l3-input-row { display: flex; gap: 5px; height: 50px; width: 100%; }
         
         .input-display {
             flex: 1;
@@ -326,18 +330,18 @@
         }
 
         .coke-small-btn {
-            width: 50px;
+            width: 55px;
             background: #fff;
             border: 2px solid var(--coke-color);
             border-radius: 8px;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             cursor: pointer;
             box-shadow: 0 3px 0 #c0392b;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .coke-small-btn.active { background: var(--coke-color); color: white; box-shadow: 0 2px 0 #922b21; }
+        .coke-small-btn.active { background: var(--coke-color); color: white; box-shadow: 0 1px 0 #922b21; transform: translateY(2px); }
 
         .numpad-grid {
             display: grid;
@@ -345,11 +349,12 @@
             grid-template-rows: repeat(4, 1fr);
             gap: 5px;
             flex: 1;
+            min-height: 180px;
         }
 
         .l3-submit-btn {
             width: 100%;
-            height: 60px;
+            height: 55px;
             background: var(--success-color);
             color: white;
             border: none;
@@ -361,6 +366,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
         .l3-submit-btn:active { transform: translateY(4px); box-shadow: none; }
 
@@ -368,40 +374,39 @@
         .ing-btn {
             background: #fff;
             border: 1px solid #bdc3c7;
-            border-bottom: 3px solid #95a5a6;
-            border-radius: 5px;
-            /* 字體根據欄數壓縮，最小0.6rem，最大1.2rem */
-            font-size: clamp(0.6rem, 1.8vw, 1.2rem); 
-            font-weight: 700;
+            border-bottom: 4px solid #95a5a6;
+            border-radius: 6px;
+            font-size: clamp(10px, 3.5vw, 1.2rem); /* 動態縮小字體以適應壓縮 */
+            font-weight: bold;
             color: #2c3e50;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.1s;
             user-select: none;
             width: 100%;
             height: 100%;
             padding: 0;
-            min-width: 0; 
+            min-width: 0; /* 允許無限壓縮 */
+            min-height: 0;
             overflow: hidden;
         }
-        .ing-btn:active { transform: translateY(2px); border-bottom-width: 1px; }
-        .ing-btn.selected { background: #95a5a6; color: #fff; border-color: #7f8c8d; opacity: 0.6; border-bottom-width: 1px; transform: translateY(2px); }
+        .ing-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
+        .ing-btn.selected { background: #95a5a6; color: #fff; border-color: #7f8c8d; opacity: 0.8; border-bottom-width: 1px; transform: translateY(3px); }
         
-        .ing-btn.coke-grid-btn { color: var(--coke-color); border-color: var(--coke-color); font-size: clamp(0.8rem, 2.5vw, 1.5rem); background: #fff5f5; }
-        .ing-btn.coke-grid-btn.selected { background: var(--coke-color); color: white; opacity: 1; }
+        .coke-grid-btn { color: var(--coke-color); border-color: var(--coke-color); font-size: 1.6rem; background: #fff5f5; }
+        .coke-grid-btn.selected { background: var(--coke-color); color: white; opacity: 1; border-bottom-color: #c0392b; }
         
-        .ing-btn.submit-grid-btn { background: var(--success-color); color: white; border-color: #1e8449; font-size: clamp(0.8rem, 2.5vw, 1.5rem); }
-        .ing-btn.submit-grid-btn:active { background: #219150; }
+        .submit-grid-btn { background: var(--success-color); color: white; border-color: #1e8449; border-bottom-color: #145a32; font-size: 1.2rem; display: flex; flex-direction: column; line-height: 1.1; }
+        .submit-grid-btn:active { background: #219150; }
 
-        .key-btn { background: #34495e; color: white; font-size: 1.4rem; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 3px 0 #2c3e50; height: 100%; }
-        .key-btn:active { transform: translateY(2px); box-shadow: none; }
-        .key-del { background: var(--danger-color); box-shadow: 0 3px 0 #922b21; }
-        .key-enter { background: var(--success-color); box-shadow: 0 3px 0 #1e8449; }
+        .key-btn { background: #34495e; color: white; font-size: 1.5rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #2c3e50; height: 100%; }
+        .key-btn:active { transform: translateY(4px); box-shadow: none; }
+        .key-del { background: var(--danger-color); box-shadow: 0 4px 0 #922b21; }
+        .key-enter { background: var(--success-color); box-shadow: 0 4px 0 #1e8449; font-size: 1.2rem; }
 
         /* 擬真食材樣式 */
-        .ingredient { width: 200px; height: 35px; margin-bottom: -3px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 1.2rem; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.1s; animation: dropIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20; user-select: none; position: relative; filter: drop-shadow(0 2px 1px rgba(0,0,0,0.15)); background: #95a5a6; border-radius: 5px; }
+        .ingredient { width: 200px; height: 35px; margin-bottom: -3px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 1.3rem; text-shadow: 1px 1px 0 rgba(0,0,0,0.4); cursor: pointer; transition: transform 0.1s; animation: dropIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20; user-select: none; position: relative; filter: drop-shadow(0 2px 1px rgba(0,0,0,0.15)); background: #95a5a6; border-radius: 5px; flex-shrink: 0; }
         .ingredient:hover { transform: scale(1.05) translateX(5px); z-index: 100; filter: brightness(1.1); }
         .ing-bread-top { background: radial-gradient(circle at 30% 20%, #f1c40f 0%, #e67e22 50%, #d35400 100%); width: 190px; height: 50px; border-radius: 50% 50% 10px 10px; margin-bottom: 0px; z-index: 50; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.1); }
         .ing-bread-top::after { content: ''; position: absolute; top: 10px; left: 30px; width: 4px; height: 3px; background: #fff8e1; border-radius: 50%; box-shadow: 20px 5px 0 #fff8e1, 40px -2px 0 #fff8e1, 60px 8px 0 #fff8e1, 80px 0px 0 #fff8e1, 100px 5px 0 #fff8e1, 120px -3px 0 #fff8e1, 140px 6px 0 #fff8e1, 30px 15px 0 #fff8e1, 90px 18px 0 #fff8e1; opacity: 0.8; }
@@ -416,22 +421,22 @@
 
         /* Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal { background: white; padding: 20px 30px; border-radius: 20px; text-align: center; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); position: relative; border: 5px solid #ff9f43; display: flex; flex-direction: column; }
-        .btn-primary { background: var(--primary-color); color: white; border: none; padding: 10px 30px; font-size: 1.2rem; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #d35400; margin-top: 10px; }
+        .modal { background: white; padding: 20px; border-radius: 20px; text-align: center; max-width: 500px; width: 92%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); position: relative; border: 5px solid #ff9f43; display: flex; flex-direction: column; }
+        .btn-primary { background: var(--primary-color); color: white; border: none; padding: 12px 20px; font-size: 1.2rem; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #d35400; margin-top: 10px; width: 100%; }
         .btn-primary:active { transform: translateY(4px); box-shadow: none; }
-        .btn-secondary { background: var(--info-color); color: white; border: none; padding: 10px 30px; font-size: 1.2rem; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #2980b9; margin-top: 10px; margin-left: 10px; }
+        .btn-secondary { background: var(--info-color); color: white; border: none; padding: 12px 20px; font-size: 1.2rem; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #2980b9; margin-top: 10px; width: 100%; }
         .btn-secondary:active { transform: translateY(4px); box-shadow: none; }
 
         /* Review Styles */
         .mistake-list { text-align: left; margin-top: 15px; border-top: 2px solid #eee; padding-top: 10px; }
         .mistake-item { background: #fff; border: 2px solid #fab1a0; border-radius: 10px; padding: 10px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .mistake-title { font-weight: bold; color: #c0392b; font-size: 1.2rem; margin-bottom: 8px; text-align: center; background: #ffe0b2; border-radius: 5px; padding: 3px; }
-        .comparison-container { display: flex; justify-content: space-around; gap: 10px; margin-top: 5px; }
+        .comparison-container { display: flex; justify-content: space-around; gap: 5px; margin-top: 5px; }
         .burger-box { text-align: center; flex: 1; background: #fafafa; padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
         .review-burger { display: flex; flex-direction: column-reverse; align-items: center; height: 160px; overflow-y: auto; margin: 5px auto; background: rgba(0,0,0,0.02); border-radius: 5px; padding-bottom: 5px; }
-        .review-layer { width: 110px; height: 22px; margin-bottom: -3px; border-radius: 4px; font-size: 0.9rem; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        .review-bread-top { background: #e67e22; border-radius: 20px 20px 4px 4px; height: 30px; margin-bottom: 0; }
-        .review-bread-bottom { background: #e67e22; border-radius: 4px 4px 12px 12px; height: 25px; }
+        .review-layer { width: 100px; height: 20px; margin-bottom: -3px; border-radius: 4px; font-size: 0.85rem; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .review-bread-top { background: #e67e22; border-radius: 20px 20px 4px 4px; height: 28px; margin-bottom: 0; }
+        .review-bread-bottom { background: #e67e22; border-radius: 4px 4px 12px 12px; height: 22px; }
         .review-meat { background: #6D214F; border: 1px solid #501639; }
         .review-cheese { background: #f1c40f; color: #d35400; border: 1px solid #f39c12; }
         .review-veg { background: #2ecc71; border: 1px solid #27ae60; }
@@ -452,33 +457,28 @@
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes dropIn { from { transform: translateY(-50px) rotate(-10deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
+        @keyframes dropIn { from { transform: translateY(-30px) rotate(-5deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
 
-        @media (max-width: 600px) {
-            #game-area { flex-direction: column; }
-            .left-panel { min-height: 220px; }
-            #game-area.level-3-layout { flex-direction: column; }
-        }
     </style>
 </head>
 <body>
 
     <!-- 1. 開始畫面 -->
     <div id="start-screen" class="modal-overlay" style="display: flex;">
-        <div class="modal" style="max-width: 500px;">
-            <div style="font-size: 3rem;">🍔</div>
-            <h1>因數漢堡大亨</h1>
-            <p>準備好接受挑戰了嗎？</p>
-            <button class="btn-primary" onclick="game.startInstruction()" style="font-size: 1.5rem; padding: 15px 40px;">進入遊戲</button>
-            <div style="font-size:0.8rem; color:#999; margin-top:20px;">最佳成績: $<span id="high-score-display">0</span></div>
+        <div class="modal" style="max-width: 400px;">
+            <div style="font-size: 4rem;">🍔</div>
+            <h1 style="margin: 10px 0;">因數漢堡大亨</h1>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">找出因數，成為漢堡大師！</p>
+            <button class="btn-primary" onclick="game.startInstruction()" style="font-size: 1.4rem; padding: 15px;">進入遊戲</button>
+            <div style="font-size:0.9rem; color:#95a5a6; margin-top:20px; font-weight:bold;">最佳營業額: $<span id="high-score-display">0</span></div>
         </div>
     </div>
 
     <!-- 2. 分頁教學畫面 -->
     <div id="instruction-screen" class="modal-overlay" style="display: none;">
-        <div class="modal" style="max-width: 600px; min-height: 400px; display: flex; flex-direction: column; justify-content: space-between;">
-            <h2 style="color:#d35400; margin-bottom: 5px;">🍔 漢堡大亨訓練班</h2>
+        <div class="modal" style="max-width: 500px; min-height: 420px; display: flex; flex-direction: column; justify-content: space-between;">
+            <h2 style="color:#d35400; margin-bottom: 5px; margin-top: 0;">🍔 漢堡大亨訓練班</h2>
             
             <div id="slide-1" class="instruction-slide active">
                 <h3 style="color:#e67e22; margin-top:0;">第 1 課：製作漢堡</h3>
@@ -497,35 +497,35 @@
                         <div class="demo-btn active">3</div>
                     </div>
                 </div>
-                <p style="font-size: 0.9rem; color:#666;">(例：6 的因數是 1, 2, 3, 6)</p>
+                <p style="font-size: 0.9rem; color:#666; margin-bottom:0;">(例：6 的因數是 1, 2, 3, 6)</p>
             </div>
 
             <div id="slide-2" class="instruction-slide">
                 <h3 style="color:#e67e22; margin-top:0;">第 2 課：特殊規則</h3>
-                <ul style="text-align:left; font-size:1rem; line-height:1.5;">
-                    <li>🥤 <strong>質數可樂</strong>：如果客人是質數，記得加送可樂！
-                        <div class="demo-coke">🥤 質數可樂</div>
+                <ul style="text-align:left; font-size:1rem; line-height:1.6; margin-bottom:0; padding-left: 20px;">
+                    <li>🥤 <strong>質數可樂</strong>：客人是質數，記得加送可樂！
+                        <div class="demo-coke" style="margin: 5px 0;">🥤 點擊右側可樂</div>
                     </li>
-                    <li>🏰 <strong>大訂單</strong>：漢堡超過 8 層，額外加 $100！</li>
-                    <li>😡 <strong>空盤懲罰</strong>：沒放食材就送出，扣 $200！</li>
+                    <li>🏰 <strong>大訂單</strong>：漢堡超過 8 層，加 $100！</li>
+                    <li>😡 <strong>空盤懲罰</strong>：沒放食材送出，扣 $200！</li>
                     <li>❌ <strong>做錯</strong>：選錯或漏選扣 $30。</li>
                 </ul>
             </div>
 
             <div id="slide-3" class="instruction-slide">
-                <h3 style="color:#e67e22; margin-top:0;">第 3 課：目標與榮譽</h3>
-                <p>每位客人都有耐心極限，動作要快！</p>
+                <h3 style="color:#e67e22; margin-top:0;">第 3 課：稱號與榮譽</h3>
+                <p>客人耐心有限，動作要快！右下角按🛎️出餐！</p>
                 <table class="rules-table">
                     <tr><th>稱號</th><th>總資產</th></tr>
                     <tr><td>🔰 漢堡小廚</td><td>&lt; $2000</td></tr>
                     <tr><td>👨‍🍳 漢堡大廚</td><td>$2000 - $4000</td></tr>
-                    <tr><td>🏘️ 小區知名漢堡大師</td><td>$4000 - $6000</td></tr>
-                    <tr><td>🌏 國際漢堡大亨</td><td>$6000 - $8000</td></tr>
+                    <tr><td>🏘️ 知名大師</td><td>$4000 - $6000</td></tr>
+                    <tr><td>🌏 國際大亨</td><td>$6000 - $8000</td></tr>
                     <tr><td>🚀 宇宙漢堡王</td><td>&gt; $8000</td></tr>
                 </table>
             </div>
 
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button id="prev-slide-btn" class="btn-secondary" onclick="game.prevSlide()" style="visibility: hidden;">上一步</button>
                 <button id="next-slide-btn" class="btn-primary" onclick="game.nextSlide()">下一步</button>
             </div>
@@ -539,7 +539,7 @@
             <span class="stat-value" id="level-val">1-30</span>
         </div>
         <div class="stat-box">
-            <span class="stat-label">剩餘時間</span>
+            <span class="stat-label">時間</span>
             <span class="stat-value" id="timer-val">90</span>
         </div>
         <div class="stat-box">
@@ -547,14 +547,14 @@
             <span class="stat-value" id="goal-val">$500</span>
         </div>
         <div class="stat-box">
-            <span class="stat-label">總資產</span>
+            <span class="stat-label">資產</span>
             <span class="stat-value" id="money-val">$0</span>
         </div>
     </header>
 
     <div id="game-area" class="level-standard">
+        <!-- 畫面主體：客人、耐心、漢堡平台 -->
         <div class="display-panel left-panel">
-            <!-- 客人與耐心條 -->
             <div class="customer-area">
                 <div class="customer-avatar" id="avatar">🤠</div>
                 <div class="customer-bubble" id="target-num">?</div>
@@ -563,7 +563,6 @@
                 </div>
             </div>
             
-            <!-- 製作台區域 (漢堡+可樂) -->
             <div class="plate-area-wrapper">
                 <div class="burger-zone">
                      <div class="burger-stack" id="burger-stack"></div>
@@ -575,17 +574,25 @@
             </div>
         </div>
 
-        <!-- 下方操作區 -->
+        <!-- 畫面底部：操作區 -->
         <div class="control-panel right-panel">
             
-            <!-- L1/L2: 動態網格 (依數量自動切換行數) -->
+            <!-- L1/L2: 左側網格 + 右側固定動作區 (無滑動) -->
             <div class="l1-controls">
-                <div class="ingredients-grid" id="ing-grid">
-                    <!-- JS Injected Buttons -->
+                <div class="ingredients-container">
+                    <!-- 動態網格 (依設定自動切換1行或2行，強行擠壓在視窗內) -->
+                    <div class="ingredients-grid" id="ing-grid">
+                        <!-- JS Injected Number Buttons -->
+                    </div>
+                </div>
+                <!-- 絕對固定的出餐與可樂區 -->
+                <div class="l1-action-area" id="l1-action-area">
+                    <div class="ing-btn coke-grid-btn" id="l1-coke-btn" onclick="game.toggleCoke()">🥤</div>
+                    <div class="ing-btn submit-grid-btn" onclick="game.submit()">🛎️<br><span style="font-size:0.8rem;">出餐</span></div>
                 </div>
             </div>
 
-            <!-- L3: 左右分區控制項 -->
+            <!-- L3: 左右/上下分區控制項 -->
             <div class="l3-controls">
                 <div class="l3-input-row">
                     <div class="input-display" id="keypad-display"></div>
@@ -613,18 +620,18 @@
     <!-- 4. 訊息彈窗 -->
     <div id="msg-modal" class="modal-overlay">
         <div class="modal">
-            <div id="msg-icon" style="font-size: 3rem; margin-bottom: 5px;"></div>
-            <h2 id="msg-title">標題</h2>
-            <div class="modal-content" id="msg-body">內容</div>
+            <div id="msg-icon" style="font-size: 3.5rem; margin-bottom: 5px;"></div>
+            <h2 id="msg-title" style="margin: 5px 0;">標題</h2>
+            <div class="modal-content" id="msg-body" style="margin-bottom: 10px; font-size:1.1rem;">內容</div>
             
-            <div id="review-area" class="review-box" style="display:none;">
+            <div id="review-area" class="review-box" style="display:none; margin-top:10px;">
                 <strong id="review-title" style="color: #2c3e50; font-size: 1.1rem; display:block; margin-bottom:10px; text-align:center;">正確答案是：</strong>
                 <div id="review-factors" class="factor-pairs"></div>
             </div>
             
             <div id="level-review-area" class="mistake-list" style="display:none;"></div>
 
-            <div id="modal-actions" style="margin-top: 15px;"></div>
+            <div id="modal-actions" style="margin-top: 15px; display:flex; flex-direction:column; gap:5px;"></div>
         </div>
     </div>
 
@@ -632,7 +639,7 @@
         const game = {
             config: {
                 level1: { min: 2, max: 30, time: 90, goal: 500, mode: 'select', patience: 30 },
-                level2: { min: 31, max: 60, time: 90, goal: 1500, mode: 'select', patience: 30 }, // 更新數值範圍：31-60
+                level2: { min: 31, max: 60, time: 90, goal: 1500, mode: 'select', patience: 30 }, 
                 level3: { min: 2, max: 100, time: 210, goal: 3500, mode: 'input', patience: 60 }, 
                 reward: 150,
                 primeBonus: 50,
@@ -720,14 +727,17 @@
 
             initKeyboard: function() {
                 document.addEventListener('keydown', (e) => {
-                    if (!this.state.isPlaying || this.state.level !== 3) return;
-                    if (e.key >= '0' && e.key <= '9') {
-                        this.keypadInput(parseInt(e.key));
-                    } else if (e.key === 'Enter') {
-                        this.keypadSubmit();
-                    } else if (e.key === 'Backspace' || e.key === 'Delete') {
-                        this.keypadDelete();
-                    } else if (e.key === ' ') { 
+                    if (!this.state.isPlaying) return;
+                    if (this.state.level === 3) {
+                        if (e.key >= '0' && e.key <= '9') {
+                            this.keypadInput(parseInt(e.key));
+                        } else if (e.key === 'Enter') {
+                            this.keypadSubmit();
+                        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                            this.keypadDelete();
+                        }
+                    }
+                    if (e.key === ' ') { 
                         e.preventDefault(); 
                         this.submit();
                     }
@@ -870,17 +880,13 @@
                 document.getElementById('target-num').innerText = num;
                 this.utils.setAvatar(); 
 
-                // Reset coke visual
                 document.getElementById('coke-visual').classList.remove('show');
 
-                // Switch Layout based on Level
                 const gameArea = document.getElementById('game-area');
                 if (cfg.mode === 'input') {
-                    // Level 3 Layout (Left-Right)
                     gameArea.classList.remove('level-standard');
                     gameArea.classList.add('level-3-layout');
                 } else {
-                    // Level 1 & 2 Layout (Top-Bottom)
                     gameArea.classList.add('level-standard');
                     gameArea.classList.remove('level-3-layout');
                     this.generateGrid(num);
@@ -929,9 +935,7 @@
                 document.body.classList.add('shake');
                 setTimeout(()=>document.body.classList.remove('shake'), 500);
 
-                // Show correct answers for timeout case too
                 this.showMistakeComparison(correctFactors);
-
                 this.showModal("😡", "客人等太久了！", `客人氣沖沖地走了！<br>賠償損失 <span style='color:#ff6b6b; font-weight:bold;'>-$${this.config.timeoutPenalty}</span>`);
             },
 
@@ -942,15 +946,17 @@
             },
 
             updateCokeUI: function() {
-                const btn = document.querySelector('.ing-btn.coke-grid-btn');
+                // L1/L2 Coke Btn
+                const btnL1 = document.getElementById('l1-coke-btn');
+                // L3 Coke Btn
                 const btnSmall = document.getElementById('coke-keypad-btn');
                 const visual = document.getElementById('coke-visual');
                 if (this.state.hasCoke) {
-                    if(btn) btn.classList.add('selected');
+                    if(btnL1) btnL1.classList.add('selected');
                     if(btnSmall) btnSmall.classList.add('active');
                     visual.classList.add('show');
                 } else {
-                    if(btn) btn.classList.remove('selected');
+                    if(btnL1) btnL1.classList.remove('selected');
                     if(btnSmall) btnSmall.classList.remove('active');
                     visual.classList.remove('show');
                 }
@@ -990,44 +996,31 @@
                 document.getElementById('keypad-display').innerText = this.state.currentInput;
             },
 
-            // --- 動態多行食材網格生成邏輯 (已按要求綁定關卡指定行數) ---
+            /* --- 完全禁止滑動：強行壓縮的網格 --- */
             generateGrid: function(target) {
                 const grid = document.getElementById('ing-grid');
                 grid.innerHTML = '';
                 
-                // 無論數字多大，永遠產生 1 到 target 的所有數字
                 let buttons = [];
                 for (let i = 1; i <= target; i++) {
                     buttons.push(i);
                 }
 
-                // 總按鈕數量 = 數字 + 1(可樂) + 1(出餐)
-                let totalButtons = buttons.length + 2; 
-
-                // 第一關：數字<=30，強制一行
-                // 第二關：數字31~60，強制兩行
-                let rows = 1;
-                if (target <= 30) {
-                    rows = 1;
-                } else if (target >= 31 && target <= 60) {
-                    rows = 2;
-                } else {
-                    rows = 3; // 備用防護
-                }
+                // 根據規則判斷行數： 第一關(<=30) 1行，第二關(31-60) 2行
+                let rows = (target <= 30) ? 1 : 2;
                 
-                // 計算每一行需要的列數 (向上取整)
-                let cols = Math.ceil(totalButtons / rows);
+                // 計算需要的列數
+                let cols = Math.ceil(buttons.length / rows);
 
-                // 設定網格佈局
-                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+                // 使用 minmax(0, 1fr) 強制壓縮所有按鈕到指定行數，絕對不超出
+                grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
                 grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
-                // 動態調整面板高度：1行高度80px，2行高度120px，依此類推
-                let baseHeight = 60; 
-                let panelHeight = (rows === 1) ? 80 : (rows * baseHeight);
+                // 動態調整 L1/L2 控制面板高度：1行大約 75px，2行大約 130px
+                let panelHeight = (rows === 1) ? 75 : 130;
                 document.documentElement.style.setProperty('--bottom-height-l1', panelHeight + 'px');
 
-                // 產生數字按鈕
+                // 產生純數字按鈕
                 buttons.forEach(num => {
                     let btn = document.createElement('div');
                     btn.className = 'ing-btn';
@@ -1036,20 +1029,18 @@
                     btn.onclick = () => this.toggleIngredient(num);
                     grid.appendChild(btn);
                 });
-                
-                // 產生可樂按鈕
-                let cokeBtn = document.createElement('div');
-                cokeBtn.className = 'ing-btn coke-grid-btn'; 
-                cokeBtn.innerText = '🥤';
-                cokeBtn.onclick = () => this.toggleCoke();
-                grid.appendChild(cokeBtn);
 
-                // 產生出餐按鈕
-                let submitBtn = document.createElement('div');
-                submitBtn.className = 'ing-btn submit-grid-btn'; 
-                submitBtn.innerText = '🛎️';
-                submitBtn.onclick = () => this.submit();
-                grid.appendChild(submitBtn);
+                // 動態調整固定的動作區 (出餐、可樂區) 排列
+                const actionArea = document.getElementById('l1-action-area');
+                if (rows === 1) {
+                    // 單行：按鈕並排
+                    actionArea.style.flexDirection = 'row';
+                    actionArea.style.width = '140px'; 
+                } else {
+                    // 雙行：按鈕上下疊
+                    actionArea.style.flexDirection = 'column';
+                    actionArea.style.width = '70px'; 
+                }
             },
 
             toggleIngredient: function(num) {
@@ -1117,7 +1108,6 @@
                         stack.append(layer);
                     }
                 }
-                stack.scrollTop = stack.scrollHeight;
             },
 
             submit: function() {
@@ -1377,15 +1367,15 @@
                     sorted.forEach(num => {
                         let styleClass = game.getIngredientClass(num, target); 
                         let reviewClass = styleClass.replace('ing-', 'review-');
-                        html += `<div class="review-layer ${reviewClass}" style="width:100px; height:20px; font-size:0.8rem;">${num}</div>`;
+                        html += `<div class="review-layer ${reviewClass}">${num}</div>`;
                     });
-                    return `<div class="review-burger" style="height:120px;">${html}</div>`;
+                    return `<div class="review-burger">${html}</div>`;
                 };
                 
                 reviewDiv.innerHTML = `
                     <div style="display:flex; justify-content:center; gap:10px;">
                         <div class="burger-box" style="border-color:#27ae60; background:#f0fdf4;">
-                            <h4 style="color:#27ae60">正確食譜</h4>
+                            <h4 style="color:#27ae60; margin:0 0 5px 0;">正確食譜</h4>
                             ${createMiniBurgerHTML(correctFactors, this.state.target)}
                             <div class="factors-text">${correctFactors.sort((a,b)=>a-b).join(", ")}</div>
                         </div>
@@ -1441,11 +1431,11 @@
                     <div class="mistake-title">客人數字：${mistake.target}</div>
                     <div class="comparison-container">
                         <div class="burger-box">
-                            <h4>你的漢堡</h4>
+                            <h4 style="margin:5px 0;">你的漢堡</h4>
                             ${createReviewBurgerHTML(mistake.user, mistake.target)}
                         </div>
                         <div class="burger-box" style="border-color:#27ae60; background:#f0fdf4;">
-                            <h4 style="color:#27ae60">完美食譜</h4>
+                            <h4 style="color:#27ae60; margin:5px 0;">完美食譜</h4>
                             ${createReviewBurgerHTML(mistake.correct, mistake.target)}
                         </div>
                     </div>
@@ -1490,8 +1480,7 @@
                 this.state.money -= this.config.mistakePenalty;
                 this.updateMoneyUI();
                 this.state.currentMistakeMade = true;
-                
-                this.state.totalServed++; // Count attempt
+                this.state.totalServed++; 
 
                 this.state.mistakeHistory.push({
                     target: this.state.target,
@@ -1502,10 +1491,7 @@
                 let msg = `扣除材料費 <span style='color:#ff6b6b; font-weight:bold;'>-$${this.config.mistakePenalty}</span>`;
                 if(extraMsg) msg = extraMsg + "<br>" + msg;
 
-                // 1. Show immediate comparison in modal
                 this.showMistakeComparison(correctFactors);
-
-                // 2. Show Modal
                 this.showModal("😰", "味道不對喔...", msg);
             },
 
@@ -1526,7 +1512,6 @@
                 document.getElementById('msg-body').style.display = 'block';
                 document.getElementById('level-review-area').style.display = 'none';
                 
-                // review-area is controlled by specific error functions, hide by default if new modal
                 if(!body.includes('扣除材料費') && !body.includes('空盤子')) {
                      document.getElementById('review-area').style.display = 'none';
                 }
@@ -1537,7 +1522,6 @@
                 
                 document.getElementById('msg-modal').style.display = 'flex';
                 
-                // Clear old actions
                 const actionsDiv = document.getElementById('modal-actions');
                 actionsDiv.innerHTML = '';
                 const btn = document.createElement('button');
@@ -1564,7 +1548,7 @@
                     return true;
                 },
                 setAvatar: function() {
-                    const avatars = ["🤠", "👩‍💼", "👨‍🎤", "👵", "👲", "👳‍♂️", "🧛‍♀️", "👽"];
+                    const avatars = ["🤠", "👩‍💼", "👨‍🎤", "👵", "👲", "👳‍♂️", "🧛‍♀️", "👽", "🤖", "🎃"];
                     document.getElementById('avatar').innerText = avatars[Math.floor(Math.random()*avatars.length)];
                 }
             }
